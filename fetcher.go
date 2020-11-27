@@ -99,7 +99,7 @@ func (f *Fetcher) fetchingWorker(metricNameChan <-chan string) {
 }
 
 func (f *Fetcher) routineFetching() {
-	ticker := time.NewTicker(3 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 	labels := *f.labels
 	for {
@@ -111,7 +111,7 @@ func (f *Fetcher) routineFetching() {
 			jobs <- string(labelValue)
 		}
 		close(jobs)
-		ticker.Reset(3 * time.Minute)
+		ticker.Reset(1 * time.Minute)
 		<-ticker.C
 	}
 }
