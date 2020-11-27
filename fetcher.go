@@ -21,15 +21,17 @@ type Fetcher struct {
 	v1api        v1.API
 	labels       *model.LabelValues
 	nbWorker     int
+	metricNs     string
 }
 
-func NewFetcher(v1api v1.API, nbWorker int) (*Fetcher, error) {
+func NewFetcher(v1api v1.API, nbWorker int, metricNs string) (*Fetcher, error) {
 	emptyLv := make(model.LabelValues, 0)
 	f := &Fetcher{
 		metricStored: &sync.Map{},
 		v1api:        v1api,
 		labels:       &emptyLv,
 		nbWorker:     nbWorker,
+		metricNs:     metricNs,
 	}
 	err := f.retrieveLabels()
 	return f, err
@@ -67,7 +69,7 @@ func (f *Fetcher) RunRoutines() {
 }
 
 func (f *Fetcher) retrieveLabels() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 	labels, _, err := f.v1api.LabelValues(ctx, model.MetricNameLabel, time.Time{}, time.Time{})
 	if err != nil {
@@ -85,6 +87,7 @@ func (f *Fetcher) routineLabels() {
 		if err != nil {
 			log.WithField("routine", "labels").Warning(err.Error())
 		}
+		ticker.Reset(5 * time.Minute)
 		<-ticker.C
 	}
 }
@@ -96,7 +99,7 @@ func (f *Fetcher) fetchingWorker(metricNameChan <-chan string) {
 }
 
 func (f *Fetcher) routineFetching() {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(3 * time.Minute)
 	defer ticker.Stop()
 	labels := *f.labels
 	for {
@@ -108,13 +111,13 @@ func (f *Fetcher) routineFetching() {
 			jobs <- string(labelValue)
 		}
 		close(jobs)
-		ticker.Reset(1 * time.Minute)
+		ticker.Reset(3 * time.Minute)
 		<-ticker.C
 	}
 }
 
 func (f *Fetcher) registerMetric(metricName string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 	values, _, err := f.v1api.Query(ctx, metricName, time.Now())
 	if err != nil {
@@ -145,11 +148,12 @@ func (f *Fetcher) registerMetric(metricName string) {
 					// and we ignore nameless metrics.
 					continue
 				}
+				metricName = f.metricNs + string(value)
 				protMetricFam = &dto.MetricFamily{
 					Type: dto.MetricType_UNTYPED.Enum(),
-					Name: proto.String(string(value)),
+					Name: proto.String(metricName),
 				}
-				lastMetricName = string(value)
+				lastMetricName = metricName
 				continue
 			}
 			protMetric.Label = append(protMetric.Label, &dto.LabelPair{

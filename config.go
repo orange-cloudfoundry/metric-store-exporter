@@ -82,6 +82,7 @@ type Config struct {
 	EnableSSL         bool           `yaml:"enable_ssl,omitempty"`
 	MetricStoreAPI    string         `yaml:"metric_store_api"`
 	NbWorkers         int            `yaml:"nb_workers"`
+	MetricNamespace   string         `json:"metric_namespace"`
 	CertPool          *x509.CertPool `yaml:"-"`
 }
 

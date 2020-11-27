@@ -55,7 +55,7 @@ func main() {
 		log.Fatal("Error when creating prometheus client: ", err.Error())
 	}
 	v1api := v1.NewAPI(client)
-	fetcher, err := NewFetcher(v1api, c.NbWorkers)
+	fetcher, err := NewFetcher(v1api, c.NbWorkers, c.MetricNamespace)
 	if err != nil {
 		log.Fatal("Error when creating fetcher: ", err.Error())
 	}
