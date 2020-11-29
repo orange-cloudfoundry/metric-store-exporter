@@ -51,16 +51,56 @@ func (f *Fetcher) RenderExpFmt(w http.ResponseWriter, req *http.Request) {
 			metricFilter[s] = true
 		}
 	}
+
+	srcIdFilter := make(map[string]bool)
+	srcIdToFilter, srcIdFilterDefined := req.Form["source_id[]"]
+	if srcIdFilterDefined {
+		for _, s := range srcIdToFilter {
+			srcIdFilter[s] = true
+		}
+	}
 	f.metricStored.Range(func(key, value interface{}) bool {
 		if _, exists := metricFilter[key.(string)]; !exists && metricFilterDefined {
 			return true
 		}
-		w.Write([]byte("\n"))
-		if err := enc.Encode(value.(*dto.MetricFamily)); err != nil {
+		metric := value.(*dto.MetricFamily)
+		if srcIdFilterDefined {
+			metric = f.filterMetricFamilyBySourceIds(metric, srcIdFilter)
+		}
+		if len(metric.Metric) == 0 {
+			return true
+		}
+		if err := enc.Encode(metric); err != nil {
 			log.Warningf("Error when encoding exp fmt: %s", err.Error())
 		}
 		return true
 	})
+}
+
+func (f *Fetcher) filterMetricFamilyBySourceIds(metFamOrig *dto.MetricFamily, srcIdFilter map[string]bool) *dto.MetricFamily {
+	name := metFamOrig.GetName()
+	help := metFamOrig.GetHelp()
+	typeFam := metFamOrig.GetType()
+	metricFinal := make([]*dto.Metric, 0)
+	metFam := &dto.MetricFamily{
+		Name: &name,
+		Help: &help,
+		Type: &typeFam,
+	}
+	for _, metric := range metFamOrig.Metric {
+		for _, lp := range metric.Label {
+			if lp.GetName() != "source_id" {
+				continue
+			}
+			if _, ok := srcIdFilter[lp.GetValue()]; !ok {
+				continue
+			}
+			metricFinal = append(metricFinal, metric)
+			break
+		}
+	}
+	metFam.Metric = metricFinal
+	return metFam
 }
 
 func (f *Fetcher) RunRoutines() {
