@@ -202,7 +202,7 @@ func (f *Fetcher) registerMetric(metricName string) {
 			})
 		}
 		if !nameSeen {
-			log.Debug("Ignoring nameless metric during federation: %#v", s.Metric)
+			log.Debugf("Ignoring nameless metric during federation: %#v", s.Metric)
 			continue
 		}
 		protMetric.TimestampMs = proto.Int64(s.Timestamp.UnixNano() / int64(time.Millisecond))

@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,15 +9,21 @@ import (
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	configFile = kingpin.Flag("config", "configuration file").Short('c').Default("config.yml").String()
 )
 
 func main() {
-	var configFile string
-	flag.StringVar(&configFile, "c", "config.yml", "Configuration File")
-	flag.Parse()
+	kingpin.Version(version.Print("metric-store-exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
 
-	c, err := InitConfigFromFile(configFile)
+	c, err := InitConfigFromFile(*configFile)
 	if err != nil {
 		log.Fatal("Error loading config: ", err.Error())
 	}
