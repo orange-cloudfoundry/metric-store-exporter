@@ -3,8 +3,8 @@ on:
   schedule:
     # runs every two weeks
     - cron: '0 8 1 * *'
-  repository_dispatch:
-    types: forced
+  workflow_dispatch:
+
 
 jobs:
   auto-update:
