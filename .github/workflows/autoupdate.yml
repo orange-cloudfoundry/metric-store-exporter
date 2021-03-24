@@ -4,6 +4,7 @@ on:
     # runs every two weeks
     - cron: '0 8 1 * *'
   workflow_dispatch:
+    types: forced
 
 jobs:
   auto-update:
