@@ -111,7 +111,7 @@ func (f *Fetcher) RunRoutines() {
 func (f *Fetcher) retrieveLabels() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
-	labels, _, err := f.v1api.LabelValues(ctx, model.MetricNameLabel, time.Time{}, time.Time{})
+	labels, _, err := f.v1api.LabelValues(ctx, model.MetricNameLabel, []string{}, time.Time{}, time.Time{})
 	if err != nil {
 		return fmt.Errorf("Error when getting all labels: %s", err.Error())
 	}
